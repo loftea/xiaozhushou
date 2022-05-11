@@ -73,11 +73,11 @@ void loop(void)
     {
       ring();
       count_down = DEADLINE;
+      averge_time = averge_time * (1 - lambda) + DEADLINE * lambda;
     }
 
     if (count_down > 0)
     {
-      averge_time = averge_time * (1 - lambda) + DEADLINE * lambda;
       last_time = DEADLINE - count_down; //上次喝水的时间，单位为分钟
       percent = static_cast<float>(count_down) / DEADLINE;
     }
