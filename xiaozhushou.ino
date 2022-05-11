@@ -12,19 +12,19 @@
  *
  */
 
-const int wuwuwu = 13;                          //提醒接口
-const int censor = 4;                           //红外检测器
-const int DEADLINE = 60;                        //设定的分钟数，建议设置 60 分钟
-const float lambda = static_cast<float>(2) / 3; //加权权重
-float averge_time = DEADLINE;
-//以往喝水时间加权平均，计算公式为 $avr <- time_new * lambda +avr_old * (1-\lambda)$
-int last_time = DEADLINE;  //上次喝水的时间
-int count_down = DEADLINE; //倒计时，单位是分
-int length = 80;           //矩阵长度
-float percent = 1.0;
-int fresh_count = 0;
+const int wuwuwu = 13; //提醒接口
+const int censor = 4;  //红外检测器
 
-auto prevRead = HIGH;
+const int DEADLINE = 60;      //设定的分钟数，建议设置 60 分钟
+const float lambda = 0.6;     //加权权重，权重越大越在意最近的喝水间隔
+float averge_time = DEADLINE; //以往喝水间隔加权平均
+int last_time = DEADLINE;     //上次喝水的时间
+
+int count_down = DEADLINE; //倒计时，单位是分
+int fresh_count = 0;       // 刷新计时
+float percent = 1.0;       //剩余倒计时百分比
+
+int length = 80; //矩阵长度
 
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, U8X8_PIN_NONE);
 
@@ -33,74 +33,88 @@ void setup(void)
   u8g2.begin();
   pinMode(wuwuwu, OUTPUT);
   pinMode(censor, INPUT);
-  //  digitalWrite(wuwuwu,HIGH);
+}
+
+void freshArgs()
+{
+  count_down = DEADLINE;
+  fresh_count = 0;
+  averge_time = averge_time * (1 - lambda) + last_time * lambda;
+}
+
+void ring()
+{
+  while (digitalRead(censor) == HIGH) // 鸣叫
+  {
+    digitalWrite(wuwuwu, HIGH);
+    delay(300);
+    digitalWrite(wuwuwu, LOW);
+    delay(300);
+  }
 }
 
 void loop(void)
 {
   if (digitalRead(censor) == LOW)
   {
-    count_down = DEADLINE * 60;
-    fresh_count = 60;
-    digitalWrite(wuwuwu, LOW);
-    if (prevRead == HIGH)
+    while (digitalRead(censor) != HIGH) // 等待水杯放回
     {
-      averge_time = averge_time * (1 - lambda) + last_time * lambda;
+      delay(1000);
     }
-    prevRead = LOW;
-  }
-  else
-  {
-    prevRead = HIGH;
+
+    freshArgs(); //更新统计量
   }
 
   if (fresh_count == 0)
   {
     fresh_count = 60; //一分钟更新一次
+
     if (count_down == 0)
     {
-      while (digitalRead(censor) == HIGH) // 鸣叫
-      {
-        digitalWrite(wuwuwu, HIGH);
-        delay(300);
-        digitalWrite(wuwuwu, LOW);
-        delay(300);
-      }
-      count_down = DEADLINE + 1;
+      ring();
+      count_down = DEADLINE;
     }
 
     if (count_down > 0)
     {
+      averge_time = averge_time * (1 - lambda) + DEADLINE * lambda;
       last_time = DEADLINE - count_down; //上次喝水的时间，单位为分钟
       percent = static_cast<float>(count_down) / DEADLINE;
-      count_down--;
     }
 
-    u8g2.clearBuffer(); //清除缓存
-    u8g2.setFont(u8g2_font_7x14B_tf);
-
-    u8g2.setCursor(0, 13);
-    u8g2.print("Average: ");
-    u8g2.print(int(averge_time));
-    u8g2.print(" mins");
-    
-    u8g2.setCursor(0, 26);
-    u8g2.print("Last: ");
-    u8g2.print(last_time);
-    u8g2.print(" mins ago");
-
-    u8g2.setCursor(0, 50);
-    u8g2.print("water force:");
-    u8g2.drawRFrame(0, 52, length, 10, 2);
-    u8g2.drawBox(0, 52, length * percent, 10);
-    
-    u8g2.setCursor(length + 2, 62);
-    u8g2.print(int(percent*100));
-    u8g2.print("%");
-
-    u8g2.sendBuffer(); //显示
+    count_down--;
   }
+
   fresh_count--;
 
-  delay(100);
+  draw();
+
+  delay(50); //使用 1000 的参数来设置 1 秒的循环
+}
+
+void draw() //更新 oled 屏幕显示
+{
+  u8g2.clearBuffer(); //清除缓存
+  u8g2.setFont(u8g2_font_7x14B_tf);
+
+  u8g2.setCursor(0, 13);
+  u8g2.print("Average: ");
+  u8g2.print(int(averge_time));
+  u8g2.print(" mins");
+
+  u8g2.setCursor(0, 26);
+  u8g2.print("Last: ");
+  u8g2.print(last_time);
+  u8g2.print(" mins ago");
+
+  u8g2.setCursor(0, 50);
+  u8g2.print("water force:");
+  u8g2.drawRFrame(0, 52, length, 10, 2);
+  u8g2.drawBox(0, 52, length * percent, 10);
+
+  u8g2.setCursor(length + 2, 62);
+  u8g2.print(int(percent * 100));
+  u8g2.print("%");
+
+  u8g2.sendBuffer(); //显示
 }
