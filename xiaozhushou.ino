@@ -9,7 +9,7 @@
  * 提醒喝水小助手的源代码
  * 核心功能：如果红外检测处于高电平就会计时，计时到一定程度就会自动提醒。
  * 变量：统计剩余时间数，已经喝水次数，以往喝水的加权平均，上次喝水的时间
- *
+ * 一些特性：只有在放回水杯之后才会刷新统计量，所以拿起水杯的时候不能马上看到屏幕更新
  */
 
 const int wuwuwu = 13; //提醒接口
@@ -40,6 +40,7 @@ void freshArgs()
   count_down = DEADLINE;
   fresh_count = 0;
   averge_time = averge_time * (1 - lambda) + last_time * lambda;
+  last_time = 0;
 }
 
 void ring()
@@ -57,7 +58,7 @@ void loop(void)
 {
   if (digitalRead(censor) == LOW)
   {
-    while (digitalRead(censor) != HIGH) // 等待水杯放回
+    while (digitalRead(censor) != HIGH) // 如果拿起水杯，则此循环等待水杯放回，放回后才会刷新统计量
     {
       delay(1000);
     }
@@ -65,31 +66,27 @@ void loop(void)
     freshArgs(); //更新统计量
   }
 
-  if (fresh_count == 0)
+  if (fresh_count == 0)//每分钟更新一次数据，同时刷新led屏幕
   {
     fresh_count = 60; //一分钟更新一次
-
-    if (count_down == 0)
-    {
-      ring();
-      count_down = DEADLINE;
-      averge_time = averge_time * (1 - lambda) + DEADLINE * lambda;
-    }
 
     if (count_down > 0)
     {
       last_time = DEADLINE - count_down; //上次喝水的时间，单位为分钟
       percent = static_cast<float>(count_down) / DEADLINE;
+    }else if (!count_down)
+    {
+      ring();
     }
+
+    draw();
 
     count_down--;
   }
 
   fresh_count--;
 
-  draw();
-
-  delay(50); //使用 1000 的参数来设置 1 秒的循环
+  delay(20); //使用 1000 的参数来设置 1 秒的循环
 }
 
 void draw() //更新 oled 屏幕显示
@@ -97,12 +94,16 @@ void draw() //更新 oled 屏幕显示
   u8g2.clearBuffer(); //清除缓存
   u8g2.setFont(u8g2_font_7x14B_tf);
 
-  u8g2.setCursor(0, 13);
+  u8g2.setCursor(0,13);
+//  u8g2.print("Time: ");
+  u8g2.print("!!NotImplemented!!");
+
+  u8g2.setCursor(0, 13+13);
   u8g2.print("Average: ");
   u8g2.print(int(averge_time));
   u8g2.print(" mins");
 
-  u8g2.setCursor(0, 26);
+  u8g2.setCursor(0, 26+13);
   u8g2.print("Last: ");
   u8g2.print(last_time);
   u8g2.print(" mins ago");
