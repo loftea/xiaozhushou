@@ -14,7 +14,7 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, U8X8_PIN_NONE);
  * 提醒喝水小助手的源代码
  * 核心功能：如果红外检测处于高电平就会计时，计时到一定程度就会自动提醒。
  * 拓展功能：
- * - 利用 DS3231 时间模块能够检测时间和温度，并且利用该
+ * - 利用 DS3231 时间模块能够检测时间和温度，并且利用以上信息进行健康提醒
  * 变量：统计剩余时间数，已经喝水次数，以往喝水的加权平均，上次喝水的时间
  * 一些特性：只有在放回水杯之后才会刷新统计量，所以拿起水杯的时候不能马上看到屏幕更新
  */
@@ -60,8 +60,8 @@ void setup(void)
     // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
   }
 
-  DateTime now = rtc.now();// 一开始要显示初始化，不然一开始会黑屏
-  draw(now);
+  // 一开始要显示初始化，不然一开始会黑屏
+  draw();
 }
 
 void loop(void)
@@ -90,8 +90,7 @@ void loop(void)
       ring();
     }
 
-    DateTime now = rtc.now();
-    draw(now);
+    draw();
 
     count_down--;
   }
@@ -101,15 +100,25 @@ void loop(void)
   delay(100); //使用 1000 的参数来设置 1 秒的循环
 }
 
-void draw(DateTime now) //更新 oled 屏幕显示
+void draw() //更新 oled 屏幕显示
 {
+  DateTime now = rtc.now();
+  
   u8g2.clearBuffer(); //清除缓存
   u8g2.setFont(u8g2_font_7x14B_tf);
 
   u8g2.setCursor(0, 13);
-  u8g2.print("Year: ");
   u8g2.print(now.year());
+  u8g2.print("/");
+  u8g2.print(now.month());
+  u8g2.print("/");
+  u8g2.print(now.day());
+
+  u8g2.print(" ");
+  u8g2.print(rtc.getTemperature());
+  u8g2.print(" C");
   // u8g2.print("!!NotImplemented!!");
+  
 
   u8g2.setCursor(0, 13 + 13);
   u8g2.print("Average: ");
