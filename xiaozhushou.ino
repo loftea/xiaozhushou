@@ -11,15 +11,16 @@ RTC_DS3231 rtc;
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, U8X8_PIN_NONE);
 
 /*
- * 提醒喝水小助手的源代码
- * 核心功能：如果红外检测处于高电平就会计时，计时到一定时间就会自动提醒。
- * 拓展功能：
- * - 利用 DS3231 时间模块能够检测时间和温度，并且利用以上信息进行健康提醒
- * 变量：统计剩余时间数，已经喝水次数，以往喝水的加权平均，上次喝水的时间
- * 一些特性：
- * - 只有在放回水杯之后才会刷新统计量，所以拿起水杯的时候不能马上看到屏幕更新
- * - 使用的平均方式是指数加权平均，节约空间，并且更加科学
- */
+   提醒喝水小助手的源代码
+   核心功能：如果红外检测处于高电平就会计时，计时到一定时间就会自动提醒。
+   拓展功能：
+   - 利用 DS3231 时间模块能够检测时间和温度，并且利用以上信息进行健康提醒
+   变量：统计剩余时间数，已经喝水次数，以往喝水的加权平均，上次喝水的时间
+   一些特性：
+   - 只有在放回水杯之后才会刷新统计量，所以拿起水杯的时候不能马上看到屏幕更新
+   - 使用的平均方式是指数加权平均，节约空间，并且更加科学
+   - 在睡觉时间会自动关闭鸣叫功能
+*/
 
 const int wuwuwu = 13;   //提醒接口
 const int censor = 4;    //红外检测器
@@ -48,13 +49,13 @@ void setup(void) {
 
   // 初始化rtc，
   if (!rtc.begin()) {
-    Serial.println("Couldn't find RTC");
-    Serial.flush();
+    //    Serial.println("Couldn't find RTC");
+    //    Serial.flush();
     abort(); // 如果没有 RTC 停止运行
   }
 
   if (rtc.lostPower()) {
-    Serial.println("RTC lost power, let's set the time!");
+    //    Serial.println("RTC lost power, let's set the time!");
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
 
@@ -64,8 +65,9 @@ void setup(void) {
 
 void loop(void) {
   if (!is_on) {
+    drawError();
     while (digitalRead(censor) ==
-           HIGH) // 如果意外红外线被遮挡，会一直等待红外移开
+           HIGH) // 如果红外线被意外遮挡，会一直等待红外移开
     {
       delay(1000);
     }
@@ -100,7 +102,7 @@ void loop(void) {
 
   fresh_count--;
 
-  delay(100); //使用 1000 的参数来设置 1 秒的循环
+  delay(20); //使用 1000 的参数来设置 1 秒的循环
 }
 
 void draw() //更新 oled 屏幕显示
@@ -137,35 +139,29 @@ void draw() //更新 oled 屏幕显示
   u8g2.print(last_time);
   u8g2.print(" mins ago");
 
-  u8g2.setCursor(0, 50);
-  drawTips();
+  u8g2.setCursor(0, 52);
+  uint8_t h = now.hour();
+  //  u8g2.print(h);
+  if (h == 8) {
+    u8g2.print("  GOOD MORNING!");
+  } else if (h < 9) {
+    u8g2.print("    zzZ");
+  }    else if (h >= 22) {
+    u8g2.print("   GOOD NIGHT!");
+  } else if (averge_time > 50) {
+    u8g2.print("   Be Active!");
+  } else {
+    u8g2.print("  Water Matters!");
+  }
 
-  u8g2.drawRFrame(0, 52, length, 10, 2); // 绘制矩阵
-  u8g2.drawBox(0, 52, length * percent, 10);
+  u8g2.drawRFrame(0, 54, length, 10, 2); // 绘制矩阵
+  u8g2.drawBox(0, 54, length * percent, 10);
 
-  u8g2.setCursor(length + 2, 62);
+  u8g2.setCursor(length + 2, 64);
   u8g2.print(int(percent * 100));
   u8g2.print("%");
 
   u8g2.sendBuffer(); //显示
-}
-
-void drawTips() {
-  switch
-    rtc.now().hour() {
-    case 8:
-      u8g2.print("GOOD MORNING!");
-      break;
-    case 23:
-      u8g2.print("GOOD NIGHT!");
-      break;
-    default:
-      if (rtc.now().hour() < 9) {
-        u8g2.print("=_= zzZ");
-      } else {
-        u8g2.print("Water Matters!");
-      }
-  }
 }
 
 void freshArgs() {
@@ -179,7 +175,7 @@ void ring() {
   int tmp = 0;                                    //防止鸣叫时间过长
   while (digitalRead(censor) == HIGH && tmp < 30) // 鸣叫
   {
-    if (rtc.now().hour()<10 || rtc.now().hour()>=23 ){
+    if (rtc.now().hour() < 10 || rtc.now().hour() >= 23 ) {
       continue;// 如果在睡觉时间，不会鸣叫
     }
     digitalWrite(wuwuwu, HIGH);
@@ -199,8 +195,8 @@ void drawError() { //提示用户需要移开遮挡物
   u8g2.clearBuffer(); //清除缓存
   u8g2.setFont(u8g2_font_7x14B_tf);
 
-  u8g2.setCursor(0, 13);
-  u8g2.print("The laser is covered!");
-  u8g2.setCursor(0, 13 + 13);
-  u8g2.print("Please move it away!");
+  u8g2.setCursor(0, 34);
+  u8g2.print("  LASER COVERED!");
+
+  u8g2.sendBuffer();
 }
