@@ -148,7 +148,7 @@ void draw() //更新 oled 屏幕显示
     u8g2.print("    zzZ");
   } else if (h >= 22) {
     u8g2.print("   GOOD NIGHT!");
-  } else if (averge_time > 50) {
+  } else if (averge_time > DEADLINE * 5 / 6) {
     u8g2.print("   Be Active!");
   } else {
     u8g2.print("  Water Matters!");
