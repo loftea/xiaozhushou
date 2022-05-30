@@ -22,9 +22,9 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, U8X8_PIN_NONE);
    - 在睡觉时间会自动关闭鸣叫功能
 */
 
-const int wuwuwu = 13;    //提醒接口
-const int censor = 4;     //红外检测器
-const int DEADLINE = 60;  //设定的分钟数，建议设置 60 分钟
+const int wuwuwu = 13;   //提醒接口
+const int censor = 4;    //红外检测器
+const int DEADLINE = 60; //设定的分钟数，建议设置 60 分钟
 const float lambda = 0.6; //加权权重，权重越大越在意最近的喝水间隔
 
 // char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday",
@@ -41,24 +41,21 @@ int length = 80; //矩阵长度
 
 bool is_on = true; //表示程序正在运行，防止鸣叫时间过长的信息量
 
-void setup(void)
-{
+void setup(void) {
   u8g2.begin();
   u8g2.setFont(u8g2_font_7x14B_tf);
-  
+
   pinMode(wuwuwu, OUTPUT);
   pinMode(censor, INPUT);
 
   // 初始化rtc，
-  if (!rtc.begin())
-  {
+  if (!rtc.begin()) {
     //    Serial.println("Couldn't find RTC");
     //    Serial.flush();
     abort(); // 如果没有 RTC 停止运行
   }
 
-  if (rtc.lostPower())
-  {
+  if (rtc.lostPower()) {
     //    Serial.println("RTC lost power, let's set the time!");
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
@@ -67,10 +64,8 @@ void setup(void)
   draw();
 }
 
-void loop(void)
-{
-  if (!is_on)
-  {
+void loop(void) {
+  if (!is_on) {
     drawError();
     while (digitalRead(censor) ==
            HIGH) // 如果红外线被意外遮挡，会一直等待红外移开
@@ -80,8 +75,7 @@ void loop(void)
     is_on = true;
   }
 
-  if (digitalRead(censor) == LOW)
-  {
+  if (digitalRead(censor) == LOW) {
     while (digitalRead(censor) !=
            HIGH) // 如果拿起水杯，则此循环等待水杯放回，放回后才会刷新统计量
     {
@@ -95,13 +89,10 @@ void loop(void)
   {
     fresh_count = 60; //一分钟更新一次
 
-    if (count_down > 0)
-    {
+    if (count_down > 0) {
       last_time = DEADLINE - count_down; //上次喝水的时间，单位为分钟
       percent = static_cast<float>(count_down) / DEADLINE;
-    }
-    else if (!count_down)
-    {
+    } else if (!count_down) {
       ring();
     }
 
@@ -138,37 +129,28 @@ void draw() //更新 oled 屏幕显示
 
   // u8g2.print("!!NotImplemented!!");
 
-  u8g2.setCursor(0, 13 + 13);
+  u8g2.setCursor(0, 26); // 13*2
   u8g2.print("Average: ");
   u8g2.print(int(averge_time));
   u8g2.print(" mins");
 
-  u8g2.setCursor(0, 26 + 13);
+  u8g2.setCursor(0, 39); // 13*3
   u8g2.print("Last: ");
   u8g2.print(last_time);
   u8g2.print(" mins ago");
 
-  u8g2.setCursor(0, 52);
+  u8g2.setCursor(0, 52); // 13*4
   uint8_t h = now.hour();
   //  u8g2.print(h);
-  if (h == 8)
-  {
+  if (h == 8) {
     u8g2.print("  GOOD MORNING!");
-  }
-  else if (h < 9)
-  {
+  } else if (h < 9) {
     u8g2.print("    zzZ");
-  }
-  else if (h >= 22)
-  {
+  } else if (h >= 22) {
     u8g2.print("   GOOD NIGHT!");
-  }
-  else if (averge_time > 50)
-  {
+  } else if (averge_time > 50) {
     u8g2.print("   Be Active!");
-  }
-  else
-  {
+  } else {
     u8g2.print("  Water Matters!");
   }
 
@@ -182,43 +164,37 @@ void draw() //更新 oled 屏幕显示
   u8g2.sendBuffer(); //显示
 }
 
-void freshArgs()
-{
+void freshArgs() {
   count_down = DEADLINE;
   fresh_count = 0;
   averge_time = averge_time * (1 - lambda) + last_time * lambda;
   last_time = 0;
 }
 
-void ring()
-{
+void ring() {
   drawRing();
 
   int tmp = 0; //防止鸣叫时间过长
 
   while (digitalRead(censor) == HIGH && tmp < 30) // 鸣叫
-  { 
+  {
     tmp++;
-    
-    if (rtc.now().hour() < 10 || rtc.now().hour() >= 23)
-    {
+
+    if (rtc.now().hour() < 10 || rtc.now().hour() >= 23) {
       continue; // 如果在睡觉时间，不会鸣叫
     }
     digitalWrite(wuwuwu, HIGH);
     delay(300);
     digitalWrite(wuwuwu, LOW);
     delay(300);
-
   }
 
-  if (tmp >= 30)
-  {
+  if (tmp >= 30) {
     is_on = false;
   }
 }
 
-void drawError()
-{ //提示用户需要移开遮挡物
+void drawError() {    //提示用户需要移开遮挡物
   u8g2.clearBuffer(); //清除缓存
 
   u8g2.setCursor(0, 34);
@@ -227,7 +203,7 @@ void drawError()
   u8g2.sendBuffer();
 }
 
-void drawRing()// 显示喝水提示
+void drawRing() // 显示喝水提示
 {
   u8g2.clearBuffer(); //清除缓存
 
