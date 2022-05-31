@@ -37,17 +37,17 @@ int count_down = DEADLINE; //倒计时，单位是分
 int fresh_count = 0;       // 刷新计时
 float percent = 1.0;       //剩余倒计时百分比
 
-int song[] = {
-  /* 儿歌《小星星》*/
-  277, 277, 415, 415, 466, 466, 415, 370, 370, 330, 330, 311, 311, 277,
-  415, 415, 370, 370, 330, 330, 311, 415, 415, 370, 370, 330, 330, 311,
-  277, 277, 415, 415, 466, 466, 415, 370, 370, 330, 330, 311, 311, 277,
-};
-
-int noteDurations[] = {
-  2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
-  2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
-};
+//int song[] = {
+//  /* 儿歌《小星星》*/
+//  277, 277, 415, 415, 466, 466, 415, 370, 370, 330, 330, 311, 311, 277,
+//  415, 415, 370, 370, 330, 330, 311, 415, 415, 370, 370, 330, 330, 311,
+//  277, 277, 415, 415, 466, 466, 415, 370, 370, 330, 330, 311, 311, 277,
+//};
+//
+//int noteDurations[] = {
+//  2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
+//  2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
+//};
 
 bool is_on = true; //表示程序正在运行，防止鸣叫时间过长的信息量
 
@@ -65,10 +65,10 @@ void setup(void) {
     abort(); // 如果没有 RTC 停止运行
   }
 
-//  if (rtc.lostPower()) {
+  if (rtc.lostPower()) {
     //    Serial.println("RTC lost power, let's set the time!");
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-//  }
+  }
 
   // 一开始要显示初始化，不然一开始一分钟会黑屏
   draw();
@@ -205,21 +205,21 @@ void ring() {//使用有源蜂鸣器
   }
 }
 
-void ringSong() {//使用无源蜂鸣器弹奏歌曲
-  drawRing();
-
-  for (int thisNote = 0; thisNote < 42; thisNote++) {
-    int noteDuration =
-      1000 /
-      noteDurations
-      [thisNote]; // 计算每个节拍的时间，以一个节拍一秒为例，四分之一拍就是1000/4毫秒，八分之一拍就是1000/8毫秒
-    tone(8, song[thisNote], noteDuration);
-    int pauseBetweenNotes =
-      noteDuration * 1.10; //每个音符间的停顿间隔，以该音符的130%为佳
-    delay(pauseBetweenNotes);
-    noTone(8);
-  }
-}
+//void ringSong() {//使用无源蜂鸣器弹奏歌曲
+//  drawRing();
+//
+//  for (int thisNote = 0; thisNote < 42; thisNote++) {
+//    int noteDuration =
+//      1000 /
+//      noteDurations
+//      [thisNote]; // 计算每个节拍的时间，以一个节拍一秒为例，四分之一拍就是1000/4毫秒，八分之一拍就是1000/8毫秒
+//    tone(8, song[thisNote], noteDuration);
+//    int pauseBetweenNotes =
+//      noteDuration * 1.10; //每个音符间的停顿间隔，以该音符的130%为佳
+//    delay(pauseBetweenNotes);
+//    noTone(8);
+//  }
+//}
 
 void drawError() {    //提示用户需要移开遮挡物
   u8g2.clearBuffer(); //清除缓存
