@@ -94,6 +94,7 @@ void loop(void) {
       percent = static_cast<float>(count_down) / DEADLINE;
     } else if (!count_down) {
       ring();
+      // ringSong();
     }
 
     draw();
@@ -171,7 +172,7 @@ void freshArgs() {
   last_time = 0;
 }
 
-void ring() {
+void ring() {//使用有源蜂鸣器
   drawRing();
 
   int tmp = 0; //防止鸣叫时间过长
@@ -191,6 +192,34 @@ void ring() {
 
   if (tmp >= 30) {
     is_on = false;
+  }
+}
+
+void ringSong() {//使用无源蜂鸣器弹奏歌曲
+  drawRing();
+
+  int song[] = {
+      /* 儿歌《小星星》*/
+      277, 277, 415, 415, 466, 466, 415, 370, 370, 330, 330, 311, 311, 277,
+      415, 415, 370, 370, 330, 330, 311, 415, 415, 370, 370, 330, 330, 311,
+      277, 277, 415, 415, 466, 466, 415, 370, 370, 330, 330, 311, 311, 277,
+  };
+
+  int noteDurations[] = {
+      2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
+      2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
+  };
+
+  for (int thisNote = 0; thisNote < 42; thisNote++) {
+    int noteDuration =
+        1000 /
+        noteDurations
+            [thisNote]; // 计算每个节拍的时间，以一个节拍一秒为例，四分之一拍就是1000/4毫秒，八分之一拍就是1000/8毫秒
+    tone(8, song[thisNote], noteDuration);
+    int pauseBetweenNotes =
+        noteDuration * 1.10; //每个音符间的停顿间隔，以该音符的130%为佳
+    delay(pauseBetweenNotes);
+    noTone(8);
   }
 }
 
