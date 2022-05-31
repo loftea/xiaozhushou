@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <U8g2lib.h>
-
 #include "RTClib.h"
 
 #ifdef U8X8_HAVE_HW_I2C
@@ -22,10 +21,11 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, SCL, SDA, U8X8_PIN_NONE);
    - 在睡觉时间会自动关闭鸣叫功能
 */
 
-const int wuwuwu = 13;   //提醒接口
-const int censor = 4;    //红外检测器
-const int DEADLINE = 60; //设定的分钟数，建议设置 60 分钟
-const float lambda = 0.6; //加权权重，权重越大越在意最近的喝水间隔
+#define wuwuwu 13   //提醒接口
+#define censor 4   //红外检测器
+#define DEADLINE 60//设定的分钟数，建议设置 60 分钟
+#define lambda 0.6 //加权权重，权重越大越在意最近的喝水间隔
+#define length  80 //矩阵长度
 
 // char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday",
 // "Thursday", "Friday", "Saturday"};
@@ -37,7 +37,17 @@ int count_down = DEADLINE; //倒计时，单位是分
 int fresh_count = 0;       // 刷新计时
 float percent = 1.0;       //剩余倒计时百分比
 
-int length = 80; //矩阵长度
+int song[] = {
+  /* 儿歌《小星星》*/
+  277, 277, 415, 415, 466, 466, 415, 370, 370, 330, 330, 311, 311, 277,
+  415, 415, 370, 370, 330, 330, 311, 415, 415, 370, 370, 330, 330, 311,
+  277, 277, 415, 415, 466, 466, 415, 370, 370, 330, 330, 311, 311, 277,
+};
+
+int noteDurations[] = {
+  2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
+  2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
+};
 
 bool is_on = true; //表示程序正在运行，防止鸣叫时间过长的信息量
 
@@ -55,10 +65,10 @@ void setup(void) {
     abort(); // 如果没有 RTC 停止运行
   }
 
-  if (rtc.lostPower()) {
+//  if (rtc.lostPower()) {
     //    Serial.println("RTC lost power, let's set the time!");
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  }
+//  }
 
   // 一开始要显示初始化，不然一开始一分钟会黑屏
   draw();
@@ -198,26 +208,14 @@ void ring() {//使用有源蜂鸣器
 void ringSong() {//使用无源蜂鸣器弹奏歌曲
   drawRing();
 
-  int song[] = {
-      /* 儿歌《小星星》*/
-      277, 277, 415, 415, 466, 466, 415, 370, 370, 330, 330, 311, 311, 277,
-      415, 415, 370, 370, 330, 330, 311, 415, 415, 370, 370, 330, 330, 311,
-      277, 277, 415, 415, 466, 466, 415, 370, 370, 330, 330, 311, 311, 277,
-  };
-
-  int noteDurations[] = {
-      2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
-      2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
-  };
-
   for (int thisNote = 0; thisNote < 42; thisNote++) {
     int noteDuration =
-        1000 /
-        noteDurations
-            [thisNote]; // 计算每个节拍的时间，以一个节拍一秒为例，四分之一拍就是1000/4毫秒，八分之一拍就是1000/8毫秒
+      1000 /
+      noteDurations
+      [thisNote]; // 计算每个节拍的时间，以一个节拍一秒为例，四分之一拍就是1000/4毫秒，八分之一拍就是1000/8毫秒
     tone(8, song[thisNote], noteDuration);
     int pauseBetweenNotes =
-        noteDuration * 1.10; //每个音符间的停顿间隔，以该音符的130%为佳
+      noteDuration * 1.10; //每个音符间的停顿间隔，以该音符的130%为佳
     delay(pauseBetweenNotes);
     noTone(8);
   }
